@@ -1,35 +1,99 @@
 #include <VirtualWire.h>
-const int tx_pin = 12;
+#include <DHT.h>
+
+// Temperature and Humidity Data Pin
+#define DHTPIN 2
+#define DHTTYPE DHT22 //DHT11, DHT21, DHT22
+
+// VirtualWire Transmit Pin
+#define TXPIN 12
+
+// Result Buffer Length
+#define BUFLEN 16
+
+// Temp char buffer for float values
+#define TMPFLOAT 4
+
+DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(9600);  // Debugging only
   Serial.println("setup");
-  vw_set_tx_pin(tx_pin);
-  //vw_set_ptt_inverted(true);
-  vw_setup(2000); 
+  vw_set_tx_pin(TXPIN);
+  vw_setup(2000);
 }
 
-byte count = 1;
-
-char charBuf[3] = {'1','#',' '};
-
 void loop() {
-  charBuf[2] = char(count++);
-  bool success = true;
+  Serial.println("#### New Loop Run ####");
+  // +1 for the null termination
+  char result_buffer[BUFLEN + 1] = {0};
+  char temperature[TMPFLOAT + 1] = {0};
+  char humidity[TMPFLOAT + 1] = {0};
+
+  float f_humidity = 0.0;
+  float f_temperature = 0.0;
+
+  f_humidity = dht.readHumidity();
+  f_temperature = dht.readTemperature();
+
+  if (!isnan(f_humidity)) {
+    dtostrf(f_humidity, TMPFLOAT, 1, humidity);
+  } else {
+    fill_array(humidity, 'E', TMPFLOAT);
+  }
+
+  if (!isnan(f_temperature)) {
+    dtostrf(f_temperature, TMPFLOAT, 1, temperature);
+  } else {
+    fill_array(temperature, 'E', TMPFLOAT);
+  }
+
+ Serial.print("temp: ");
+ Serial.println(temperature);
+ Serial.print("humidity: ");
+ Serial.println(humidity);
+ 
+  //collector_id;temperature;humidity;
+  sprintf(result_buffer, "1;%s;%s;", temperature, humidity);
   
+  Serial.println("result_array: ");
+  Serial.println(result_buffer);
+
+  //send_to_receiver(result_buffer);
+
+  //wait a bit before next loop
+  delay(2000);
+}
+
+/*void print_array(char a[], int len){
+  for(int i=0; i<len; i++){
+    Serial.print(a[i]);
+  }
+  Serial.println(' ');
+}*/
+
+bool send_to_receiver(char charBuf[]) {
+  bool success = false;
+
   digitalWrite(LED_BUILTIN, HIGH);
-  Serial.println("sending:");
-  Serial.print(charBuf[0]);
-  Serial.print(charBuf[1]);
-  Serial.println(byte(charBuf[2]));
-  //vw_send((uint8_t *)charBuf, sizeof(charBuf));
   success = vw_send((uint8_t *)charBuf, 3);
   vw_wait_tx();
-  if (success) {
-    Serial.println("finished");
+  digitalWrite(LED_BUILTIN, LOW);
+
+  if (! success) {
+    Serial.println("finished sending");
   } else {
     Serial.println("error while sending message");
   }
   digitalWrite(LED_BUILTIN, LOW);
-  delay(500);
+  delay(1000);
+
+  return success;
 }
+
+void fill_array(char a[], char fill, int len) {
+  for (int i = 0; i < len; i++ ) {
+    a[i] = fill;
+  }
+}
+
