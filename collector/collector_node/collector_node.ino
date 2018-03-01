@@ -52,14 +52,14 @@ void loop() {
  Serial.println(temperature);
  Serial.print("humidity: ");
  Serial.println(humidity);
- 
+
   //collector_id;temperature;humidity;
   sprintf(result_buffer, "1;%s;%s;", temperature, humidity);
-  
+
   Serial.println("result_array: ");
   Serial.println(result_buffer);
 
-  //send_to_receiver(result_buffer);
+  send_to_receiver(result_buffer);
 
   //wait a bit before next loop
   delay(2000);
@@ -76,11 +76,11 @@ bool send_to_receiver(char charBuf[]) {
   bool success = false;
 
   digitalWrite(LED_BUILTIN, HIGH);
-  success = vw_send((uint8_t *)charBuf, 3);
+  success = vw_send((uint8_t *)charBuf, BUFLEN);
   vw_wait_tx();
   digitalWrite(LED_BUILTIN, LOW);
 
-  if (! success) {
+  if (success) {
     Serial.println("finished sending");
   } else {
     Serial.println("error while sending message");
@@ -96,4 +96,3 @@ void fill_array(char a[], char fill, int len) {
     a[i] = fill;
   }
 }
-
