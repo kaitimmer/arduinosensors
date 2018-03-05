@@ -20,6 +20,8 @@ void setup() {
   Serial.begin(9600);  // Debugging only
   Serial.println("setup");
   vw_set_tx_pin(TXPIN);
+  Serial.println("waiting for 5 sec to let sensors initialize");
+  delay(5000);
   vw_setup(2000);
 }
 
@@ -54,7 +56,7 @@ void loop() {
  Serial.println(humidity);
 
   //collector_id;temperature;humidity;
-  sprintf(result_buffer, "1;%s;%s;", temperature, humidity);
+  sprintf(result_buffer, "CN;1;%s;%s;", temperature, humidity);
 
   Serial.println("result_array: ");
   Serial.println(result_buffer);
@@ -72,23 +74,21 @@ void loop() {
   Serial.println(' ');
 }*/
 
-bool send_to_receiver(char charBuf[]) {
-  bool success = false;
+void send_to_receiver(char charBuf[]) {
+  // Generate a random Number between 1000 and 10000
+  // Always read from an unconnected analog port here
+  int r = (analogRead(1)%100)*100;
 
+  Serial.print("wait: ");
+  Serial.println(r);
+  delay(r);
+
+  Serial.println("sending...");
   digitalWrite(LED_BUILTIN, HIGH);
-  success = vw_send((uint8_t *)charBuf, BUFLEN);
+  vw_send((uint8_t *)charBuf, strlen(charBuf));
   vw_wait_tx();
   digitalWrite(LED_BUILTIN, LOW);
-
-  if (success) {
-    Serial.println("finished sending");
-  } else {
-    Serial.println("error while sending message");
-  }
-  digitalWrite(LED_BUILTIN, LOW);
-  delay(1000);
-
-  return success;
+  Serial.println("finished sending...");
 }
 
 void fill_array(char a[], char fill, int len) {
