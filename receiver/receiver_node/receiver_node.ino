@@ -1,7 +1,7 @@
 #include <VirtualWire.h>
 #include <Ethernet.h>
 
-#define RXPIN 12
+#define RXPIN 2
 
 // ethernet shield mac address
 byte mac[] = {  0x00, 0xAA, 0xAA, 0xAA, 0xAA, 0x01 };
@@ -32,7 +32,7 @@ void setup()
   Serial.print("IP address: ");
   Serial.println(Ethernet.localIP());
   // start listening for clients
-  SERVER.begin();
+  //SERVER.begin();
 
   // 44mhz receiver initialize
   vw_set_rx_pin(RXPIN);

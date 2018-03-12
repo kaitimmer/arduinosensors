@@ -56,7 +56,7 @@ void loop() {
  Serial.println(humidity);
 
   //collector_id;temperature;humidity;
-  sprintf(result_buffer, "CN;1;%s;%s;", temperature, humidity);
+  sprintf(result_buffer, "CN;ws;%s;%s;", temperature, humidity);
 
   Serial.println("result_array: ");
   Serial.println(result_buffer);
