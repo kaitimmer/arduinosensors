@@ -1,5 +1,6 @@
 #include <DHT.h>
 #include "lib.h"
+
 // Temperature and Humidity Data Pin
 #define DHTPIN 2
 #define DHTTYPE DHT22 //DHT11, DHT21, DHT22
@@ -11,7 +12,7 @@
 #define BUFLEN 16
 
 // Temp char buffer for float values
-#define TMPFLOAT 5
+#define TMPFLOAT 4
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -38,7 +39,7 @@ void loop() {
   f_temperature = dht.readTemperature();
 
   if (!isnan(f_humidity)) {
-    dtostrf(f_humidity, TMPFLOAT, 1, humidity);
+    dtostrf(f_humidity, TMPFLOAT, 2, humidity);
   } else {
     fill_array(humidity, 'E', TMPFLOAT);
   }
@@ -55,13 +56,14 @@ void loop() {
  Serial.println(humidity);
 
   //collector_id;temperature;humidity;
-  sprintf(result_buffer, "CN;ws;%s;%s;", temperature, humidity);
+  sprintf(result_buffer, "CN;lr;%s;%s;", temperature, humidity);
 
   Serial.println("result_array: ");
   Serial.println(result_buffer);
 
   send_to_receiver(result_buffer);
 
-  //wait a bit before next loop
-  delay(2000);
+  //Loop every 5 minutes 60*5*1000
+  delay(5*60*1000);
+  //delay(1000);
 }
