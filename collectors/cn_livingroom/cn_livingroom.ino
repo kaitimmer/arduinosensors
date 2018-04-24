@@ -63,7 +63,6 @@ void loop() {
 
   send_to_receiver(result_buffer);
 
-  //Loop every 5 minutes 60*5*1000
-  delay(5*60*1000);
+  delay(10000);
   //delay(1000);
 }

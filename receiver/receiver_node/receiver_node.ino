@@ -1,5 +1,6 @@
 #include <VirtualWire.h>
 #include <Ethernet.h>
+#include "secret.h"
 
 #define RXPIN 2
 
@@ -19,10 +20,12 @@ char DELIMITER[] = ";";
 // ws (weather station)
 char ws_temperature_celsius[5] = {0};
 char ws_humidity_percent[5] = {0};
+char ws_last_received_millis[12] = {0};
 
 // lr (living room)
 char lr_temperature_celsius[5] = {0};
 char lr_humidity_percent[5] = {0};
+char lr_last_received_millis[12] = {0};
 
 void setup()
 {
@@ -59,7 +62,7 @@ void loop()
 
   char charBuf[buflen] = {0};
 
-  // wait for a max of 30 mins, then go on and at least check the DHCP lease
+  // wait, then go on and at least check the DHCP lease
   // even when nothing arrived on the RF Port
   vw_wait_rx_max(100);
 
@@ -85,33 +88,49 @@ void loop()
 }
 
 void listenForEthernetClients(){
+  char linebuf[80];
+  int charcount=0;
+  boolean authenticated=false;
+
   // listen for incoming clients
   EthernetClient client = SERVER.available();
   if (client) {
+    memset(linebuf,0,sizeof(linebuf));
+    charcount=0;
+    authenticated=false;
+
     // an http request ends with a blank line
     boolean currentLineIsBlank = true;
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
+
+        linebuf[charcount]=c;
+        if (charcount < sizeof(linebuf) -1){
+          charcount++;
+        }
+
+        Serial.write(c);
+
         // if you've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
         // so you can send a reply
         if (c == '\n' && currentLineIsBlank) {
-          // send a standard http response header
-          client.println("HTTP/1.1 200 OK");
-          client.println("Content-Type: text/plain");
-          client.println();
-
-          // print the current readings, in HTML format:
-          client.print("temperature_celsius{collector=livingroom, sensor=dht22} ");
-          client.println(lr_temperature_celsius);
-          client.print("humidity_percent{collector=livingroom, sensor=dht22} ");
-          client.println(lr_humidity_percent);
+          if (authenticated) {
+            sendMetrics(client);
+          } else {
+            sendAuthpage(client);
+          }
           break;
         }
         if (c == '\n') {
           // you're starting a new line
           currentLineIsBlank = true;
+          if (strcasestr(linebuf,"Authorization: Basic") > 0 && strstr(linebuf,AUTHSECRET) > 0) {
+            authenticated=true;
+          }
+          memset(linebuf,0,sizeof(linebuf));
+          charcount=0;
         } else if (c != '\r') {
           // you've gotten a character on the current line
           currentLineIsBlank = false;
@@ -123,6 +142,34 @@ void listenForEthernetClients(){
     // close the connection:
     client.stop();
   }
+}
+
+void sendMetrics(EthernetClient &client){
+  // send a standard http response header
+  client.println("HTTP/1.1 200 OK");
+  client.println("Content-Type: text/plain");
+  client.println("Connnection: close");
+  client.println();
+
+  // print the current readings, in HTML format:
+  client.print("temperature_celsius{collector=\"livingroom\", sensor=\"dht22\"} ");
+  client.println(lr_temperature_celsius);
+  client.print("humidity_percent{collector=\"livingroom\", sensor=\"dht22\"} ");
+  client.println(lr_humidity_percent);
+  client.print("last_received_millis{collector=\"livingroom\"} ");
+  client.println(lr_last_received_millis);
+}
+
+void sendAuthpage(EthernetClient &client)
+{
+  client.println("HTTP/1.1 401 Authorization Required");
+  client.println("WWW-Authenticate: Basic realm=\"Secure Area\"");
+  client.println("Content-Type: text/html");
+  client.println("Connnection: close");
+  client.println();
+  client.println("<!DOCTYPE HTML>");
+  client.println("<HTML><HEAD><TITLE>Error</TITLE>");
+  client.println(" </HEAD><BODY><H1>401 Unauthorized.</H1></BODY></HTML>");
 }
 
 void parseLine(char charBuf[]){
@@ -141,9 +188,6 @@ void parseLine(char charBuf[]){
     else if (count == 1) {
       strncpy(type, ptr, 2);
     } else {
-      Serial.print("count: ");
-      Serial.println(count);
-
       if (strcmp(type, "ws") == 0) {
         // weather station
         switch (count){
@@ -171,6 +215,12 @@ void parseLine(char charBuf[]){
     // next part
     ptr = strtok(NULL, DELIMITER);
     count++;
+  }
+
+  if (strcmp(type, "ws") == 0) {
+    sprintf(ws_last_received_millis, "%lu", millis());
+  } else if (strcmp(type, "lr") == 0) {
+    sprintf(lr_last_received_millis, "%lu", millis());
   }
 }
 

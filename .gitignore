@@ -1,2 +1,2 @@
 libraries/*
-!libraries/VirtualWire
+secret.h
