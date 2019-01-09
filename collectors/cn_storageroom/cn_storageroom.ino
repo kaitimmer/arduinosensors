@@ -2,7 +2,7 @@
 #include "lib.h"
 #include "sensordata.h"
 
-char sensortype[3] = {'l', 'r', '\0'};
+char sensortype[3] = {'s', 'r', '\0'};
 
 void setup() {
   Serial.begin(9600);  // Debugging only

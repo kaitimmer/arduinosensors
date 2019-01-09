@@ -12,7 +12,6 @@ byte mac[] = {  0x00, 0xAA, 0xAA, 0xAA, 0xAA, 0x01 };
 // (port 80 is default for HTTP):
 EthernetServer SERVER(80);
 
-unsigned long LAST_DHCP_CHECK;
 char DELIMITER[] = ";";
 
 // global measurement variables
@@ -38,14 +37,8 @@ void setup()
   Serial.println("initializing....");
 
   // start the Ethernet connection:
-  Serial.println("Trying to get an IP address using DHCP");
-  while (Ethernet.begin(mac) == 0) {
-    Serial.println("Failed to configure Ethernet using DHCP");
-    // initialize the Ethernet device not using DHCP:
-    Ethernet.begin(mac);
-  }
-
-  LAST_DHCP_CHECK = millis();
+  Serial.println("Starting Ethernet Connection");
+  Ethernet.begin(mac, ip);
 
   // print your local IP address:
   Serial.print("IP address: ");
@@ -67,8 +60,7 @@ void loop()
 
   char charBuf[buflen] = {0};
 
-  // wait, then go on and at least check the DHCP lease
-  // even when nothing arrived on the RF Port
+  // wait for 100ms
   vw_wait_rx_max(100);
 
   if (vw_get_message(buf, &buflen)) // Non-blocking
@@ -88,7 +80,6 @@ void loop()
 
     digitalWrite(LED_BUILTIN, LOW);
   }
-  checkDHCP();
   listenForEthernetClients();
 }
 
@@ -248,13 +239,4 @@ void parseLine(char charBuf[]){
     ptr = strtok(NULL, DELIMITER);
     count++;
   }
-}
-
-void checkDHCP() {
-  if ((millis() - LAST_DHCP_CHECK) > 3600000){
-    Serial.println("maintain dhcp address");
-    Ethernet.maintain();
-  }
-
-  LAST_DHCP_CHECK = millis();
 }
