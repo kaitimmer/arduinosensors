@@ -63,6 +63,6 @@ void loop() {
 
   send_to_receiver(result_buffer);
 
-  delay(10000);
+  //delay(10000);
   //delay(1000);
 }
