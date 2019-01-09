@@ -27,6 +27,11 @@ char lr_temperature_celsius[5] = {0};
 char lr_humidity_percent[5] = {0};
 char lr_last_received_millis[12] = {0};
 
+// sr (storage room)
+char sr_temperature_celsius[5] = {0};
+char sr_humidity_percent[5] = {0};
+char sr_last_received_millis[12] = {0};
+
 void setup()
 {
   Serial.begin(9600);  // Debugging only
@@ -151,13 +156,20 @@ void sendMetrics(EthernetClient &client){
   client.println("Connnection: close");
   client.println();
 
-  // print the current readings, in HTML format:
+  // print the current living room readings, in prometheus format:
   client.print("temperature_celsius{collector=\"livingroom\", sensor=\"dht22\"} ");
   client.println(lr_temperature_celsius);
   client.print("humidity_percent{collector=\"livingroom\", sensor=\"dht22\"} ");
   client.println(lr_humidity_percent);
   client.print("last_received_millis{collector=\"livingroom\"} ");
   client.println(lr_last_received_millis);
+  // print the current storage room readings, in prometheus format:
+  client.print("temperature_celsius{collector=\"storageroom\", sensor=\"dht22\"} ");
+  client.println(sr_temperature_celsius);
+  client.print("humidity_percent{collector=\"storageroom\", sensor=\"dht22\"} ");
+  client.println(sr_humidity_percent);
+  client.print("last_received_millis{collector=\"storageroom\"} ");
+  client.println(sr_last_received_millis);
 }
 
 void sendAuthpage(EthernetClient &client)
@@ -194,6 +206,8 @@ void parseLine(char charBuf[]){
           default:
             continue;
         }
+        sprintf(ws_last_received_millis, "%lu", millis());
+
       } else if (strcmp(type, "lr") == 0) {
         // living room
         switch (count) {
@@ -208,6 +222,24 @@ void parseLine(char charBuf[]){
           default:
             ;;
         }
+        sprintf(lr_last_received_millis, "%lu", millis());
+
+      } else if (strcmp(type, "sr") == 0) {
+        // storage room
+        switch (count) {
+          case 2:
+            //temperature
+            strncpy(sr_temperature_celsius, ptr, 4);
+            ;;
+          case 3:
+            //humidity
+            strncpy(sr_humidity_percent, ptr, 4);
+            ;;
+          default:
+            ;;
+        }
+        sprintf(sr_last_received_millis, "%lu", millis());
+
       } else {
         Serial.println("Wooot just happened (type unkown)");
       }
@@ -215,12 +247,6 @@ void parseLine(char charBuf[]){
     // next part
     ptr = strtok(NULL, DELIMITER);
     count++;
-  }
-
-  if (strcmp(type, "ws") == 0) {
-    sprintf(ws_last_received_millis, "%lu", millis());
-  } else if (strcmp(type, "lr") == 0) {
-    sprintf(lr_last_received_millis, "%lu", millis());
   }
 }
 
