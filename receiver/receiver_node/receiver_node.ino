@@ -114,8 +114,6 @@ void listenForEthernetClients(){
         if (c == '\n' && currentLineIsBlank) {
           if (authenticated) {
             sendMetrics(client);
-          } else {
-            sendAuthpage(client);
           }
           break;
         }
@@ -142,37 +140,33 @@ void listenForEthernetClients(){
 
 void sendMetrics(EthernetClient &client){
   // send a standard http response header
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/plain");
-  client.println("Connnection: close");
-  client.println();
+  client.print("HTTP/1.1 200 OK\n");
+  client.print("Content-Type: text/plain\n");
+  client.print("Connnection: close\n");
+  client.print("\n");
 
+  client.print("# TYPE temperature_celsius gauge\n");
   // print the current living room readings, in prometheus format:
-  client.print("temperature_celsius{collector=\"livingroom\", sensor=\"dht22\"} ");
-  client.println(lr_temperature_celsius);
-  client.print("humidity_percent{collector=\"livingroom\", sensor=\"dht22\"} ");
-  client.println(lr_humidity_percent);
-  client.print("last_received_millis{collector=\"livingroom\"} ");
-  client.println(lr_last_received_millis);
-  // print the current storage room readings, in prometheus format:
-  client.print("temperature_celsius{collector=\"storageroom\", sensor=\"dht22\"} ");
-  client.println(sr_temperature_celsius);
-  client.print("humidity_percent{collector=\"storageroom\", sensor=\"dht22\"} ");
-  client.println(sr_humidity_percent);
-  client.print("last_received_millis{collector=\"storageroom\"} ");
-  client.println(sr_last_received_millis);
-}
+  client.print("temperature_celsius{collector=\"livingroom\",sensor=\"dht22\"} ");
+  client.print(lr_temperature_celsius);client.print("\n");
+  client.print("temperature_celsius{collector=\"storageroom\",sensor=\"dht22\"} ");
+  client.print(sr_temperature_celsius);client.print("\n");
 
-void sendAuthpage(EthernetClient &client)
-{
-  client.println("HTTP/1.1 401 Authorization Required");
-  client.println("WWW-Authenticate: Basic realm=\"Secure Area\"");
-  client.println("Content-Type: text/html");
-  client.println("Connnection: close");
-  client.println();
-  client.println("<!DOCTYPE HTML>");
-  client.println("<HTML><HEAD><TITLE>Error</TITLE>");
-  client.println(" </HEAD><BODY><H1>401 Unauthorized.</H1></BODY></HTML>");
+  client.print("\n");
+
+  client.print("# TYPE humidity_percent gauge\n");
+  client.print("humidity_percent{collector=\"livingroom\",sensor=\"dht22\"} ");
+  client.print(lr_humidity_percent);client.print("\n");
+  client.print("humidity_percent{collector=\"storageroom\",sensor=\"dht22\"} ");
+  client.print(sr_humidity_percent);client.print("\n");
+
+  client.print("\n");
+
+  client.print("# TYPE last_received_millis counter\n");
+  client.print("last_received_millis{collector=\"livingroom\"} ");
+  client.print(lr_last_received_millis);client.print("\n");
+  client.print("last_received_millis{collector=\"storageroom\"} ");
+  client.print(sr_last_received_millis);client.print("\n");
 }
 
 void parseLine(char charBuf[]){
