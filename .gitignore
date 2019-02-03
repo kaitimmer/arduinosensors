@@ -1,2 +1,3 @@
 libraries/*
+.idea/*
 secret.h
