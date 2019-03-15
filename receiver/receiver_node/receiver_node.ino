@@ -31,6 +31,11 @@ char sr_temperature_celsius[5] = {0};
 char sr_humidity_percent[5] = {0};
 char sr_last_received_millis[12] = {0};
 
+// gh (green house room)
+char gh_temperature_celsius[5] = {0};
+char gh_humidity_percent[5] = {0};
+char gh_last_received_millis[12] = {0};
+
 void setup()
 {
   Serial.begin(9600);  // Debugging only
@@ -151,6 +156,8 @@ void sendMetrics(EthernetClient &client){
   client.print(lr_temperature_celsius);client.print("\n");
   client.print("temperature_celsius{collector=\"storageroom\",sensor=\"dht22\"} ");
   client.print(sr_temperature_celsius);client.print("\n");
+  client.print("temperature_celsius{collector=\"greenhouse\",sensor=\"dht22\"} ");
+  client.print(gh_temperature_celsius);client.print("\n");
 
   client.print("\n");
 
@@ -159,6 +166,8 @@ void sendMetrics(EthernetClient &client){
   client.print(lr_humidity_percent);client.print("\n");
   client.print("humidity_percent{collector=\"storageroom\",sensor=\"dht22\"} ");
   client.print(sr_humidity_percent);client.print("\n");
+  client.print("humidity_percent{collector=\"greenhouse\",sensor=\"dht22\"} ");
+  client.print(gh_humidity_percent);client.print("\n");
 
   client.print("\n");
 
@@ -167,6 +176,8 @@ void sendMetrics(EthernetClient &client){
   client.print(lr_last_received_millis);client.print("\n");
   client.print("last_received_millis{collector=\"storageroom\"} ");
   client.print(sr_last_received_millis);client.print("\n");
+  client.print("last_received_millis{collector=\"greenhouse\"} ");
+  client.print(gh_last_received_millis);client.print("\n");
 }
 
 void parseLine(char charBuf[]){
@@ -224,6 +235,22 @@ void parseLine(char charBuf[]){
             ;;
         }
         sprintf(sr_last_received_millis, "%lu", millis());
+
+      } else if (strcmp(type, "gh") == 0) {
+        // storage room
+        switch (count) {
+          case 2:
+            //temperature
+            strncpy(gh_temperature_celsius, ptr, 4);
+            ;;
+          case 3:
+            //humidity
+            strncpy(gh_humidity_percent, ptr, 4);
+            ;;
+          default:
+            ;;
+        }
+        sprintf(gh_last_received_millis, "%lu", millis());
 
       } else {
         Serial.println("Wooot just happened (type unkown)");
